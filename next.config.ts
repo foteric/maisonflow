@@ -1,7 +1,9 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ['@supabase/supabase-js'],
+  // If you are using an older version of Next.js 14/15, use this instead:
+  // experimental: { serverComponentsExternalPackages: ['@supabase/supabase-js'] }
 };
 
 export default nextConfig;
