@@ -3,7 +3,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../lib/supabase'; // Looks up one folder level to find lib
+import { supabase } from '../lib/supabase'; 
+
+export const dynamic = 'force-dynamic'; // 👈 ADDED THIS TO BYPASS BUILD-TIME EVALUATION CRASHES
 
 export default function AuthPage() {
   const router = useRouter();
@@ -93,7 +95,7 @@ export default function AuthPage() {
                 <input
                   type="text"
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black bg-white"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
@@ -104,7 +106,7 @@ export default function AuthPage() {
                   type="text"
                   placeholder="e.g., 078XXXXXXX"
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black bg-white"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
@@ -129,7 +131,7 @@ export default function AuthPage() {
             <input
               type="email"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black bg-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -140,7 +142,7 @@ export default function AuthPage() {
             <input
               type="password"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-black bg-white"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -160,7 +162,7 @@ export default function AuthPage() {
         <div className="text-center mt-4">
           <button
             type="button"
-            className="text-sm text-blue-600 hover:underline cursor-pointer"
+            className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent border-0"
             onClick={() => {
               setIsSignUp(!isSignUp);
               setMessage({ type: '', text: '' });
