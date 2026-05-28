@@ -3,52 +3,68 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from './lib/supabase'; // Points to your build-safe lib folder
+import { supabase } from './lib/supabase';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
 
-  // 1. Check if a user is actively signed in when the page loads
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // No active keys? Bounce them back to the login screen immediately
+      try {
+        // 1. Attempt to grab the active session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) throw sessionError;
+
+        // If no user is logged in, immediately throw them to the auth gate
+        if (!session) {
+          router.push('/auth');
+          return;
+        }
+
+        // 2. Safely attempt to fetch profile information
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+        } else {
+          setUserName(session.user.email || 'User');
+        }
+
+      } catch (error) {
+        // This will catch network timeouts, missing keys, or database errors
+        console.error("MaisonFlow Auth Error:", error);
         router.push('/auth');
-        return;
+      } finally {
+        // This block GUARANTEES the loading state turns off no matter what happens above
+        setLoading(false);
       }
-
-      // Fetch the user's name from your profiles table matching their auth ID
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profile?.full_name) {
-        setUserName(profile.full_name);
-      } else {
-        setUserName(session.user.email || 'User');
-      }
-      setLoading(false);
     };
 
     checkUser();
   }, [router]);
 
-  // 2. Dynamic Sign Out Engine
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/auth'); // Redirect straight to login screen
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Signout failed:", err);
+    } finally {
+      router.push('/auth');
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 text-sm">
-        Loading your real-time portfolio metrics...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500 text-sm gap-2">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span>Loading your real-time portfolio metrics...</span>
       </div>
     );
   }
