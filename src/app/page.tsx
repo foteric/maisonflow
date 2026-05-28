@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from './lib/supabase'; // NOTE: If this stays red, change it to '../lib/supabase'
+import { supabase } from './lib/supabase'; // Change to '../lib/supabase' if path throws an error
 
 interface Structure {
   id: string;
@@ -34,7 +34,9 @@ interface LedgerRecord {
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // Throttles rapid multi-clicks
   const [userName, setUserName] = useState('');
+  const [errorFeedback, setErrorFeedback] = useState<string | null>(null); // Inline validation warning
   
   // Collections
   const [structures, setStructures] = useState<Structure[]>([]);
@@ -65,7 +67,6 @@ export default function DashboardPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [currentBillingMonth, setCurrentBillingMonth] = useState('May 2026');
 
-  // Sign Out Handler
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -118,31 +119,68 @@ export default function DashboardPage() {
     fetchData();
   }, [router]);
 
+  // Clean error messages whenever modals close
+  const closeModalsResetErrors = () => {
+    setIsStructModalOpen(false);
+    setIsUnitModalOpen(false);
+    setIsPaymentModalOpen(false);
+    setErrorFeedback(null);
+  };
+
   const handleAddStructure = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStructName.trim()) return;
+    if (!newStructName.trim() || submitting) return;
+    setErrorFeedback(null);
+
+    // Uniqueness constraint check
+    const structureExists = structures.some(
+      s => s.name.toLowerCase().trim() === newStructName.toLowerCase().trim()
+    );
+    if (structureExists) {
+      setErrorFeedback(`A structure named "${newStructName}" already exists in your portfolio.`);
+      return;
+    }
+
     try {
+      setSubmitting(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
       await supabase.from('structures').insert([{
         user_id: session.user.id,
-        name: newStructName,
+        name: newStructName.trim(),
         structure_type: newStructType,
         monthly_revenue: parseFloat(newStructRevenue) || 0,
       }]);
+
       setNewStructName('');
       setNewStructRevenue('');
-      setIsStructModalOpen(false);
-      fetchData();
+      closeModalsResetErrors();
+      await fetchData();
     } catch (err) {
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleAddUnit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUnitName.trim() || !selectedStructureId) return;
+    if (!newUnitName.trim() || !selectedStructureId || submitting) return;
+    setErrorFeedback(null);
+
+    // Uniqueness constraint check within this specific structure
+    const unitExists = allUnits.some(
+      u => u.structure_id === selectedStructureId && 
+      u.name.toLowerCase().trim() === newUnitName.toLowerCase().trim()
+    );
+    if (unitExists) {
+      setErrorFeedback(`Unit "${newUnitName}" already exists within this specific building layout.`);
+      return;
+    }
+
     try {
+      setSubmitting(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const hasTenant = newTenantName.trim().length > 0;
@@ -150,16 +188,15 @@ export default function DashboardPage() {
       const { data: insertedUnit, error } = await supabase.from('units').insert([{
         structure_id: selectedStructureId,
         user_id: session.user.id,
-        name: newUnitName,
+        name: newUnitName.trim(),
         rent_amount: parseFloat(newUnitRent) || 0,
-        tenant_name: hasTenant ? newTenantName : null,
-        tenant_phone: hasTenant ? newTenantPhone : null,
+        tenant_name: hasTenant ? newTenantName.trim() : null,
+        tenant_phone: hasTenant ? newTenantPhone.trim() : null,
         is_occupied: hasTenant,
       }]).select().single();
 
       if (error) throw error;
 
-      // If unit was added with an occupant, initialize a clean ledger line for them
       if (hasTenant && insertedUnit) {
         await supabase.from('rent_ledger').insert([{
           unit_id: insertedUnit.id,
@@ -176,18 +213,21 @@ export default function DashboardPage() {
       setNewUnitRent('');
       setNewTenantName('');
       setNewTenantPhone('');
-      setIsUnitModalOpen(false);
-      fetchData();
+      closeModalsResetErrors();
+      await fetchData();
     } catch (err) {
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeUnitForPayment) return;
+    if (!activeUnitForPayment || submitting) return;
 
     try {
+      setSubmitting(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
@@ -197,7 +237,6 @@ export default function DashboardPage() {
       if (paid >= expected) status = 'Paid';
       else if (paid > 0) status = 'Partial';
 
-      // Check if period already exists to update, or create fresh record
       const existingRecord = ledger.find(
         l => l.unit_id === activeUnitForPayment.id && l.billing_period === currentBillingMonth
       );
@@ -220,20 +259,33 @@ export default function DashboardPage() {
 
       setPaymentAmount('');
       setActiveUnitForPayment(null);
-      setIsPaymentModalOpen(false);
-      fetchData();
+      closeModalsResetErrors();
+      await fetchData();
     } catch (err) {
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // High-Level Financial Compilations
+  // Calculations tied cleanly to the active structure depth
   const activeStructure = structures.find(s => s.id === selectedStructureId);
   const filteredUnits = allUnits.filter(u => u.structure_id === selectedStructureId);
   
-  const totalOccupants = allUnits.filter(u => u.is_occupied).length;
-  const portfolioCollected = ledger.reduce((sum, r) => sum + Number(r.amount_paid), 0);
-  const portfolioExpected = structures.reduce((sum, s) => sum + Number(s.monthly_revenue), 0);
+  // Calculate dynamic parameters across current scope
+  const visibleUnitIds = selectedStructureId ? filteredUnits.map(u => u.id) : allUnits.map(u => u.id);
+  const scopingLedger = ledger.filter(l => visibleUnitIds.includes(l.unit_id) && l.billing_period === currentBillingMonth);
+
+  const totalOccupants = selectedStructureId 
+    ? filteredUnits.filter(u => u.is_occupied).length 
+    : allUnits.filter(u => u.is_occupied).length;
+
+  const portfolioCollected = scopingLedger.reduce((sum, r) => sum + Number(r.amount_paid), 0);
+  
+  const portfolioExpected = selectedStructureId 
+    ? filteredUnits.reduce((sum, u) => sum + Number(u.rent_amount), 0)
+    : allUnits.reduce((sum, u) => sum + Number(u.rent_amount), 0);
+
   const outstandingArrears = Math.max(0, portfolioExpected - portfolioCollected);
 
   if (loading) {
@@ -249,7 +301,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 text-black">
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
-        <span className="text-xl font-bold tracking-tight text-gray-900 cursor-pointer" onClick={() => setSelectedStructureId(null)}>MaisonFlow</span>
+        <span className="text-xl font-bold tracking-tight text-gray-900 cursor-pointer" onClick={() => { setSelectedStructureId(null); setErrorFeedback(null); }}>MaisonFlow</span>
         <button onClick={handleSignOut} className="text-sm font-medium text-red-600 hover:text-red-700 bg-transparent border-0 cursor-pointer">
           Sign Out
         </button>
@@ -259,7 +311,7 @@ export default function DashboardPage() {
         <div className="mb-8 flex justify-between items-end">
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-              <span className="hover:text-blue-600 cursor-pointer" onClick={() => setSelectedStructureId(null)}>Portfolio Overview</span>
+              <span className="hover:text-blue-600 cursor-pointer" onClick={() => { setSelectedStructureId(null); setErrorFeedback(null); }}>Portfolio Overview</span>
               {activeStructure && <span> / {activeStructure.name}</span>}
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mt-1">
@@ -267,29 +319,28 @@ export default function DashboardPage() {
             </h2>
           </div>
           {activeStructure && (
-            <button onClick={() => setSelectedStructureId(null)} className="text-sm text-gray-500 border border-gray-200 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-lg cursor-pointer">
+            <button onClick={() => { setSelectedStructureId(null); setErrorFeedback(null); }} className="text-sm text-gray-500 border border-gray-200 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-lg cursor-pointer">
               ⬅ Back to Overview
             </button>
           )}
         </div>
 
-        {/* Global Financial Dashboard Metrics */}
+        {/* Dynamic Financial Dashboard Metrics */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">Total Occupants Registered</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2 text-emerald-600">{totalOccupants}</p>
+            <p className="text-sm font-medium text-gray-500">{activeStructure ? "Active Occupants Here" : "Total Occupants Registered"}</p>
+            <p className="text-3xl font-bold text-emerald-600 mt-2">{totalOccupants}</p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">Collected Revenue (RWF)</p>
+            <p className="text-sm font-medium text-gray-500">Collected Revenue ({currentBillingMonth})</p>
             <p className="text-3xl font-bold text-blue-600 mt-2">{portfolioCollected.toLocaleString()} RWF</p>
           </div>
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">Outstanding Arrears Portfolio</p>
+            <p className="text-sm font-medium text-gray-500">Outstanding Arrears Balance</p>
             <p className="text-3xl font-bold text-red-600 mt-2">{outstandingArrears.toLocaleString()} RWF</p>
           </div>
         </div>
 
-        {/* MASTER SCREEN MATRIX */}
         {!selectedStructureId ? (
           /* TABLE VIEW A: ALL BUILDINGS */
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
@@ -421,6 +472,13 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Register New Structure</h3>
+            
+            {errorFeedback && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-medium rounded-lg">
+                ⚠️ {errorFeedback}
+              </div>
+            )}
+
             <form onSubmit={handleAddStructure} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Structure Name</label>
@@ -439,8 +497,10 @@ export default function DashboardPage() {
                 <input type="number" placeholder="e.g. 700000" value={newStructRevenue} onChange={(e) => setNewStructRevenue(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm bg-gray-50 focus:bg-white text-black" />
               </div>
               <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={() => setIsStructModalOpen(false)} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">Save Asset</button>
+                <button type="button" onClick={closeModalsResetErrors} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:bg-blue-400">
+                  {submitting ? 'Saving Asset...' : 'Save Asset'}
+                </button>
               </div>
             </form>
           </div>
@@ -452,6 +512,13 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Segment New Rental Unit</h3>
+            
+            {errorFeedback && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-medium rounded-lg">
+                ⚠️ {errorFeedback}
+              </div>
+            )}
+
             <form onSubmit={handleAddUnit} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Unit Label / Number</label>
@@ -469,8 +536,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={() => setIsUnitModalOpen(false)} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg">Confirm Unit</button>
+                <button type="button" onClick={closeModalsResetErrors} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg disabled:bg-emerald-400">
+                  {submitting ? 'Configuring Unit...' : 'Confirm Unit'}
+                </button>
               </div>
             </form>
           </div>
@@ -497,8 +566,10 @@ export default function DashboardPage() {
                 <input type="number" required placeholder={`Target full rent: ${activeUnitForPayment.rent_amount.toLocaleString()} RWF`} value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="w-full border border-gray-200 rounded-lg p-2 text-sm bg-gray-50 text-black focus:outline-emerald-600" />
               </div>
               <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={() => { setActiveUnitForPayment(null); setIsPaymentModalOpen(false); }} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg">Commit Collection</button>
+                <button type="button" onClick={closeModalsResetErrors} className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg disabled:bg-emerald-400">
+                  {submitting ? 'Processing Ledger...' : 'Commit Collection'}
+                </button>
               </div>
             </form>
           </div>
