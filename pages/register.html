@@ -89,7 +89,7 @@
   <script>
     const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     function showAlert(message, type) {
       document.getElementById('alert').innerHTML =
@@ -113,14 +113,14 @@
         return
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await sbClient.auth.signUp({ email, password })
 
       if (error) {
         showAlert(error.message, 'error')
         return
       }
 
-      await supabase.from('profiles').insert({
+      await sbClient.from('profiles').insert({
         id: data.user.id,
         full_name: fullname,
         phone: phone,

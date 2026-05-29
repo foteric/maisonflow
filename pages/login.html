@@ -72,7 +72,7 @@
   <script>
     const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     function showAlert(message, type) {
       document.getElementById('alert').innerHTML =
@@ -88,24 +88,24 @@
         return
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await sbClient.auth.signInWithPassword({ email, password })
 
       if (error) {
         showAlert(error.message, 'error')
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await sbClient
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single()
 
-      if (profile?.role === 'landlord') location.href = 'dashboard.html'
-      else if (profile?.role === 'admin') location.href = 'dashboard.html'
-      else if (profile?.role === 'tenant') location.href = 'dashboard.html'
-      else if (profile?.role === 'caretaker') location.href = 'dashboard.html'
-      else location.href = 'dashboard.html'
+      if (profile?.role) {
+        location.href = 'dashboard.html'
+      } else {
+        location.href = 'dashboard.html'
+      }
     }
   </script>
 
