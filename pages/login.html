@@ -101,11 +101,15 @@
         .eq('id', data.user.id)
         .single()
 
-      if (profile?.role === 'admin' || user.email === 'foteric.finance@gmail.com') {
-  location.href = 'admin.html'
-} else {
-  location.href = 'dashboard.html'
-}
+      if (profile?.role === 'admin' || data.user.email === 'foteric.finance@gmail.com') {
+        location.href = 'admin.html'
+      } else if (profile?.role === 'caretaker') {
+        location.href = 'caretaker.html'
+      } else if (profile?.role === 'tenant') {
+        location.href = 'tenant-portal.html'
+      } else {
+        location.href = 'dashboard.html'
+      }
     }
   </script>
 
