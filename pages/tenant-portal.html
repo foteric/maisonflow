@@ -36,8 +36,7 @@
       display: inline-block;
       background: #10b981; color: #fff;
       padding: 4px 12px; border-radius: 20px;
-      font-size: 12px; font-weight: 700;
-      margin-bottom: 8px;
+      font-size: 12px; font-weight: 700; margin-bottom: 8px;
     }
     .metrics {
       display: grid;
@@ -118,9 +117,9 @@
 
   <div class="sidebar">
     <div class="sidebar-logo">Maison<span>Flow</span></div>
-    <div class="nav-item active"><span class="nav-icon">🏠</span> My Home</div>
-    <div class="nav-item" onclick="showSection('rent')"><span class="nav-icon">💰</span> Rent History</div>
-    <div class="nav-item" onclick="showSection('tickets')"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item active" id="nav-home" onclick="showSection('home', this)"><span class="nav-icon">🏠</span> My Home</div>
+    <div class="nav-item" onclick="showSection('rent', this)"><span class="nav-icon">💰</span> Rent History</div>
+    <div class="nav-item" onclick="showSection('tickets', this)"><span class="nav-icon">🔧</span> Maintenance</div>
     <div class="nav-item" onclick="location.href='profile.html'"><span class="nav-icon">👤</span> Profile</div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
@@ -134,7 +133,6 @@
       <p id="tenant-email">Loading...</p>
     </div>
 
-    <!-- METRICS -->
     <div class="metrics">
       <div class="metric-card green">
         <div class="metric-icon">🏠</div>
@@ -159,7 +157,6 @@
       <div class="card" id="rent-status-card">
         <p style="color:#64748b;">Loading rent info...</p>
       </div>
-
       <p class="section-title">🔧 Recent Maintenance</p>
       <div class="card" id="recent-tickets">
         <p style="color:#64748b;">Loading...</p>
@@ -184,7 +181,6 @@
         <p style="color:#64748b;">Loading...</p>
       </div>
     </div>
-
   </div>
 
   <!-- REPORT ISSUE MODAL -->
@@ -237,10 +233,13 @@
         `<div class="alert alert-${type}">${message}</div>`
     }
 
-    function showSection(name) {
+    function showSection(name, btn) {
+      if (!tenantData) return
       ['home','rent','tickets'].forEach(s => {
         document.getElementById(`section-${s}`).style.display = s === name ? 'block' : 'none'
       })
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'))
+      if (btn) btn.classList.add('active')
       if (name === 'rent') loadRentHistory()
       if (name === 'tickets') loadMyTickets()
     }
@@ -257,9 +256,9 @@
     }
 
     async function loadRentHistory() {
+      if (!tenantData) return
       const { data: records } = await sbClient
-        .from('rent_records')
-        .select('*')
+        .from('rent_records').select('*')
         .eq('tenant_id', tenantData.id)
         .order('month', { ascending: false })
 
@@ -278,14 +277,13 @@
             <div style="font-weight:700;">${r.amount_due.toLocaleString()} RWF</div>
             ${statusBadge(r.status)}
           </div>
-        </div>
-      `).join('')
+        </div>`).join('')
     }
 
     async function loadMyTickets() {
+      if (!tenantData) return
       const { data: tickets } = await sbClient
-        .from('maintenance_tickets')
-        .select('*, units(unit_number)')
+        .from('maintenance_tickets').select('*, units(unit_number)')
         .eq('tenant_id', tenantData.id)
         .order('created_at', { ascending: false })
 
@@ -301,11 +299,11 @@
             ${ticketStatusBadge(t.status)}
           </div>
           <div class="ticket-meta">${t.description || '—'} • ${new Date(t.created_at).toLocaleDateString()}</div>
-        </div>
-      `).join('')
+        </div>`).join('')
     }
 
     async function submitIssue() {
+      if (!tenantData) return
       const title = document.getElementById('issue-title').value.trim()
       const desc = document.getElementById('issue-desc').value.trim()
       const priority = document.getElementById('issue-priority').value
@@ -320,9 +318,13 @@
       })
 
       if (error) { showAlert('modal-alert', error.message, 'error'); return }
-
       closeModal()
       loadMyTickets()
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
     }
 
     async function init() {
@@ -346,8 +348,7 @@
       tenantData = tenant
 
       if (tenant) {
-        document.getElementById('my-unit').textContent =
-          `Unit ${tenant.units?.unit_number || '—'}`
+        document.getElementById('my-unit').textContent = `Unit ${tenant.units?.unit_number || '—'}`
 
         const { data: rentRecord } = await sbClient
           .from('rent_records').select('*')
