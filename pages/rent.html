@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Rent Tracking</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #10b981; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #2563eb; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .btn-generate {
+      background: #10b981; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .summary-card {
+      background: #fff; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .summary-value { font-size: 22px; font-weight: 800; color: #1e293b; }
+    .summary-label { color: #64748b; font-size: 13px; margin-top: 4px; }
+    .summary-card.red { border-left: 4px solid #ef4444; }
+    .summary-card.green { border-left: 4px solid #10b981; }
+    .summary-card.orange { border-left: 4px solid #f59e0b; }
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 16px; border-radius: 20px; border: 2px solid #e2e8f0;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: #64748b; transition: 0.2s;
+    }
+    .filter-btn.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .rent-table {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f8fafc; padding: 14px 16px;
+      text-align: left; font-size: 13px;
+      color: #64748b; font-weight: 600;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 14px 16px; font-size: 14px;
+      color: #1e293b; border-bottom: 1px solid #f1f5f9;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-green { background: #d1fae5; color: #059669; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .overdue { background: #fff1f2; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span></div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+    <div class="nav-item active"><span class="nav-icon">📋</span> Rent Tracking</div>
+    <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
+    <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <h1>📋 Rent Tracking</h1>
+      <button class="btn-generate" onclick="generateRent()">⚡ Generate This Month</button>
+    </div>
+
+    <div class="summary-cards">
+      <div class="summary-card red">
+        <div class="summary-value" id="total-unpaid">0</div>
+        <div class="summary-label">Unpaid Records</div>
+      </div>
+      <div class="summary-card green">
+        <div class="summary-value" id="total-paid">0</div>
+        <div class="summary-label">Paid Records</div>
+      </div>
+      <div class="summary-card orange">
+        <div class="summary-value" id="total-overdue">0 RWF</div>
+        <div class="summary-label">Total Outstanding</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterRent('all', this)">All</button>
+      <button class="filter-btn" onclick="filterRent('unpaid', this)">Unpaid</button>
+      <button class="filter-btn" onclick="filterRent('paid', this)">Paid</button>
+      <button class="filter-btn" onclick="filterRent('partial', this)">Partial</button>
+    </div>
+
+    <div id="alert"></div>
+    <div class="rent-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Month</th>
+            <th>Amount Due (RWF)</th>
+            <th>Amount Paid (RWF)</th>
+            <th>Balance (RWF)</th>
+            <th>Due Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="rent-list">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let allRecords = []
+    let currentUser = null
+
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('open')
+      document.getElementById('overlay').classList.toggle('show')
+    }
+
+    function statusBadge(status) {
+      const map = { unpaid: 'badge-red', paid: 'badge-green', partial: 'badge-orange' }
+      return `<span class="badge ${map[status] || 'badge-red'}">${status}</span>`
+    }
+
+    function filterRent(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      if (status === 'all') renderRecords(allRecords)
+      else renderRecords(allRecords.filter(r => r.status === status))
+    }
+
+    function renderRecords(records) {
+      const tbody = document.getElementById('rent-list')
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">No rent records found.</td></tr>`
+        return
+      }
+
+      tbody.innerHTML = records.map(r => {
+        const balance = r.amount_due - r.amount_paid
+        const isOverdue = new Date(r.due_date) < new Date() && r.status !== 'paid'
+        return `
+          <tr class="${isOverdue ? 'overdue' : ''}">
+            <td>${r.tenants?.profiles?.full_name || '—'}</td>
+            <td>${r.month}</td>
+            <td>${r.amount_due.toLocaleString()}</td>
+            <td>${r.amount_paid.toLocaleString()}</td>
+            <td style="color:${balance > 0 ? '#ef4444' : '#10b981'};font-weight:600;">
+              ${balance.toLocaleString()}
+            </td>
+            <td>${r.due_date || '—'}</td>
+            <td>${statusBadge(r.status)} ${isOverdue ? '⚠️' : ''}</td>
+          </tr>`
+      }).join('')
+    }
+
+    async function loadRentRecords() {
+      const { data: records } = await sbClient
+        .from('rent_records')
+        .select('*, tenants(profile_id, profiles(full_name))')
+        .order('due_date', { ascending: false })
+
+      allRecords = records || []
+
+      const unpaid = allRecords.filter(r => r.status === 'unpaid').length
+      const paid = allRecords.filter(r => r.status === 'paid').length
+      const outstanding = allRecords
+        .filter(r => r.status !== 'paid')
+        .reduce((sum, r) => sum + (r.amount_due - r.amount_paid), 0)
+
+      document.getElementById('total-unpaid').textContent = unpaid
+      document.getElementById('total-paid').textContent = paid
+      document.getElementById('total-overdue').textContent = outstanding.toLocaleString() + ' RWF'
+
+      renderRecords(allRecords)
+    }
+
+    async function generateRent() {
+      const { error } = await sbClient.rpc('generate_monthly_rent')
+      if (error) {
+        document.getElementById('alert').innerHTML =
+          `<div class="alert alert-error">${error.message}</div>`
+        return
+      }
+      document.getElementById('alert').innerHTML =
+        `<div class="alert alert-success">Rent records generated successfully!</div>`
+      loadRentRecords()
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+      currentUser = user
+      loadRentRecords()
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
