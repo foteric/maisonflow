@@ -264,29 +264,45 @@
     }
 
     async function savePayment() {
-      const tenantId = document.getElementById('pay-tenant').value
-      const amount = document.getElementById('pay-amount').value
-      const method = document.getElementById('pay-method').value
-      const reference = document.getElementById('pay-reference').value.trim()
+  const tenantId = document.getElementById('pay-tenant').value
+  const amount = document.getElementById('pay-amount').value
+  const method = document.getElementById('pay-method').value
+  const reference = document.getElementById('pay-reference').value.trim()
 
-      if (!tenantId || !amount) {
-        showAlert('modal-alert', 'Please select a tenant and enter amount', 'error')
-        return
-      }
+  if (!tenantId || !amount) {
+    showAlert('modal-alert', 'Please select a tenant and enter amount', 'error')
+    return
+  }
 
-      const { error } = await sbClient.from('payments').insert({
-        tenant_id: tenantId,
-        amount: parseFloat(amount),
-        method: method,
-        reference: reference || null
-      })
+  const { error } = await sbClient.from('payments').insert({
+    tenant_id: tenantId,
+    amount: parseFloat(amount),
+    method: method,
+    reference: reference || null
+  })
 
-      if (error) { showAlert('modal-alert', error.message, 'error'); return }
+  if (error) { showAlert('modal-alert', error.message, 'error'); return }
 
-      closeModal()
-      loadPayments()
-    }
+  const currentMonth = new Date().toISOString().slice(0, 7)
 
+  const { data: rentRecord } = await sbClient
+    .from('rent_records')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('month', currentMonth)
+    .single()
+
+  if (rentRecord) {
+    const newPaid = rentRecord.amount_paid + parseFloat(amount)
+    const newStatus = newPaid >= rentRecord.amount_due ? 'paid' : 'partial'
+    await sbClient.from('rent_records')
+      .update({ amount_paid: newPaid, status: newStatus })
+      .eq('id', rentRecord.id)
+  }
+
+  closeModal()
+  loadPayments()
+}
     async function handleLogout() {
       await sbClient.auth.signOut()
       location.href = 'login.html'
