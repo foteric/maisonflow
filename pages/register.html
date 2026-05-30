@@ -33,8 +33,18 @@
     .auth-subtitle {
       text-align: center;
       color: #64748b;
-      margin-bottom: 32px;
+      margin-bottom: 8px;
       font-size: 14px;
+    }
+    .auth-note {
+      text-align: center;
+      color: #10b981;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      background: #d1fae5;
+      padding: 8px 16px;
+      border-radius: 8px;
     }
     .auth-footer { text-align: center; margin-top: 24px; font-size: 14px; color: #64748b; }
     .auth-footer a { color: #2563eb; font-weight: 600; }
@@ -44,7 +54,8 @@
 
   <div class="auth-card">
     <div class="auth-logo">Maison<span>Flow</span></div>
-    <p class="auth-subtitle">Create your account</p>
+    <p class="auth-subtitle">Create your landlord account</p>
+    <p class="auth-note">🏠 Tenants & caretakers are added by landlords</p>
 
     <div id="alert"></div>
 
@@ -64,21 +75,11 @@
     </div>
 
     <div class="form-group">
-      <label>Role</label>
-      <select id="role">
-        <option value="">Select your role</option>
-        <option value="landlord">Landlord</option>
-        <option value="caretaker">Caretaker</option>
-        <option value="tenant">Tenant</option>
-      </select>
-    </div>
-
-    <div class="form-group">
       <label>Password</label>
       <input type="password" id="password" placeholder="Min. 6 characters">
     </div>
 
-    <button class="btn btn-primary" onclick="handleRegister()">Create Account</button>
+    <button class="btn btn-primary" onclick="handleRegister()">Create Landlord Account</button>
 
     <div class="auth-footer">
       Already have an account? <a href="login.html">Sign In</a>
@@ -100,10 +101,9 @@
       const fullname = document.getElementById('fullname').value.trim()
       const email = document.getElementById('email').value.trim()
       const phone = document.getElementById('phone').value.trim()
-      const role = document.getElementById('role').value
       const password = document.getElementById('password').value
 
-      if (!fullname || !email || !phone || !role || !password) {
+      if (!fullname || !email || !phone || !password) {
         showAlert('Please fill in all fields', 'error')
         return
       }
@@ -124,7 +124,7 @@
         id: data.user.id,
         full_name: fullname,
         phone: phone,
-        role: role
+        role: 'landlord'
       })
 
       showAlert('Account created! Please check your email to verify.', 'success')
