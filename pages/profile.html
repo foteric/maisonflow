@@ -96,7 +96,7 @@
 
   <div class="sidebar">
     <div class="sidebar-logo">Maison<span>Flow</span></div>
-    <div class="nav-item" id="nav-home"><span class="nav-icon">📊</span> Dashboard</div>
+    <div id="nav-links"></div>
     <div class="nav-item active"><span class="nav-icon">👤</span> Profile</div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
@@ -201,14 +201,25 @@
         .eq('id', user.id).single()
 
       if (profile) {
-        const homeLinks = {
-          admin: 'admin.html',
-          landlord: 'dashboard.html',
-          caretaker: 'caretaker.html',
-          tenant: 'tenant-portal.html'
+        const navLinks = {
+          admin: `
+            <div class="nav-item" onclick="location.href='admin.html'"><span class="nav-icon">📊</span> Dashboard</div>`,
+          landlord: `
+            <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
+            <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+            <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+            <div class="nav-item" onclick="location.href='rent.html'"><span class="nav-icon">📋</span> Rent Tracking</div>
+            <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
+            <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
+            <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>`,
+          caretaker: `
+            <div class="nav-item" onclick="location.href='caretaker.html'"><span class="nav-icon">🔧</span> My Tickets</div>`,
+          tenant: `
+            <div class="nav-item" onclick="location.href='tenant-portal.html'"><span class="nav-icon">🏠</span> My Home</div>
+            <div class="nav-item" onclick="location.href='tenant-portal.html'"><span class="nav-icon">💰</span> Rent History</div>
+            <div class="nav-item" onclick="location.href='tenant-portal.html'"><span class="nav-icon">🔧</span> Maintenance</div>`
         }
-        const homeLink = homeLinks[profile.role] || 'dashboard.html'
-        document.getElementById('nav-home').onclick = () => location.href = homeLink
+        document.getElementById('nav-links').innerHTML = navLinks[profile.role] || navLinks.landlord
 
         const initials = profile.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'
         document.getElementById('avatar-initials').textContent = initials
