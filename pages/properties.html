@@ -49,11 +49,10 @@
       background: #fff; border-radius: 16px;
       padding: 32px; width: 100%; max-width: 460px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh; overflow-y: auto;
     }
     .modal h2 { margin-bottom: 24px; color: #1e293b; }
-    .modal-footer {
-      display: flex; gap: 12px; margin-top: 24px;
-    }
+    .modal-footer { display: flex; gap: 12px; margin-top: 24px; }
     .btn-cancel {
       flex: 1; padding: 12px; border-radius: 10px;
       border: 2px solid #e2e8f0; background: #fff;
@@ -66,7 +65,7 @@
     }
     .properties-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 20px;
     }
     .property-card {
@@ -74,15 +73,30 @@
       padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
       border-left: 4px solid #2563eb;
     }
-    .property-name { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+    .property-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .property-name { font-size: 18px; font-weight: 700; color: #1e293b; }
     .property-address { color: #64748b; font-size: 14px; margin-bottom: 16px; }
-    .property-stats { display: flex; gap: 16px; }
-    .stat { text-align: center; }
-    .stat-value { font-size: 20px; font-weight: 700; color: #2563eb; }
-    .stat-label { font-size: 12px; color: #64748b; }
-    .empty-state {
-      text-align: center; padding: 60px 20px; color: #64748b;
+    .units-section { margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    .units-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .units-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+    .btn-add-unit {
+      background: #10b981; color: #fff; border: none;
+      padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; font-weight: 600;
     }
+    .unit-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: #f8fafc; border-radius: 8px;
+      margin-bottom: 8px; font-size: 14px;
+    }
+    .unit-number { font-weight: 600; color: #1e293b; }
+    .unit-rent { color: #2563eb; font-weight: 600; }
+    .unit-status {
+      font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .status-occupied { background: #fee2e2; color: #dc2626; }
+    .status-vacant { background: #d1fae5; color: #059669; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
     @media (max-width: 768px) {
       .sidebar { display: none; }
@@ -95,7 +109,7 @@
   <div class="sidebar">
     <div class="sidebar-logo">Maison<span>Flow</span></div>
     <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
-    <div class="nav-item active" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item active"><span class="nav-icon">🏠</span> Properties</div>
     <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
     <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
     <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
@@ -108,7 +122,7 @@
   <div class="main">
     <div class="page-header">
       <h1>🏠 My Properties</h1>
-      <button class="btn-add" onclick="openModal()">+ Add Property</button>
+      <button class="btn-add" onclick="openModal('property')">+ Add Property</button>
     </div>
 
     <div id="alert"></div>
@@ -121,10 +135,10 @@
   </div>
 
   <!-- ADD PROPERTY MODAL -->
-  <div class="modal-overlay" id="modal">
+  <div class="modal-overlay" id="property-modal">
     <div class="modal">
       <h2>Add New Property</h2>
-      <div id="modal-alert"></div>
+      <div id="property-alert"></div>
       <div class="form-group">
         <label>Property Name</label>
         <input type="text" id="prop-name" placeholder="e.g. Kimironko Apartments">
@@ -134,8 +148,28 @@
         <input type="text" id="prop-address" placeholder="e.g. KG 123 St, Kigali">
       </div>
       <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-cancel" onclick="closeModal('property')">Cancel</button>
         <button class="btn-save" onclick="saveProperty()">Save Property</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD UNIT MODAL -->
+  <div class="modal-overlay" id="unit-modal">
+    <div class="modal">
+      <h2>Add New Unit</h2>
+      <div id="unit-alert"></div>
+      <div class="form-group">
+        <label>Unit Number</label>
+        <input type="text" id="unit-number" placeholder="e.g. 101">
+      </div>
+      <div class="form-group">
+        <label>Monthly Rent (RWF)</label>
+        <input type="number" id="unit-rent" placeholder="e.g. 150000">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('unit')">Cancel</button>
+        <button class="btn-save" onclick="saveUnit()">Save Unit</button>
       </div>
     </div>
   </div>
@@ -143,17 +177,29 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
-    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const SUPABASE_ANON_KEY = 'PASTE_YOUR_PUBLISHABLE_KEY_HERE'
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     let currentUser = null
+    let selectedPropertyId = null
 
-    function openModal() { document.getElementById('modal').classList.add('show') }
-    function closeModal() { document.getElementById('modal').classList.remove('show') }
+    function openModal(type) {
+      document.getElementById(`${type}-modal`).classList.add('show')
+    }
+    function closeModal(type) {
+      document.getElementById(`${type}-modal`).classList.remove('show')
+    }
 
     function showAlert(id, message, type) {
       document.getElementById(id).innerHTML =
         `<div class="alert alert-${type}">${message}</div>`
+    }
+
+    function openUnitModal(propertyId) {
+      selectedPropertyId = propertyId
+      document.getElementById('unit-number').value = ''
+      document.getElementById('unit-rent').value = ''
+      openModal('unit')
     }
 
     async function loadProperties() {
@@ -174,43 +220,76 @@
         return
       }
 
-      list.innerHTML = properties.map(p => `
-        <div class="property-card">
-          <div class="property-name">${p.name}</div>
-          <div class="property-address">📍 ${p.address || 'No address'}</div>
-          <div class="property-stats">
-            <div class="stat">
-              <div class="stat-value">0</div>
-              <div class="stat-label">Units</div>
+      const { data: units } = await sbClient
+        .from('units')
+        .select('*')
+        .in('property_id', properties.map(p => p.id))
+
+      list.innerHTML = properties.map(p => {
+        const propUnits = units?.filter(u => u.property_id === p.id) || []
+        return `
+          <div class="property-card">
+            <div class="property-header">
+              <div>
+                <div class="property-name">${p.name}</div>
+                <div class="property-address">📍 ${p.address || 'No address'}</div>
+              </div>
             </div>
-          </div>
-        </div>
-      `).join('')
+            <div class="units-section">
+              <div class="units-header">
+                <div class="units-title">Units (${propUnits.length})</div>
+                <button class="btn-add-unit" onclick="openUnitModal('${p.id}')">+ Add Unit</button>
+              </div>
+              ${propUnits.length === 0
+                ? `<div style="color:#94a3b8;font-size:13px;">No units yet.</div>`
+                : propUnits.map(u => `
+                  <div class="unit-item">
+                    <div class="unit-number">Unit ${u.unit_number}</div>
+                    <div class="unit-rent">${u.rent_amount.toLocaleString()} RWF</div>
+                    <div class="unit-status ${u.is_occupied ? 'status-occupied' : 'status-vacant'}">
+                      ${u.is_occupied ? 'Occupied' : 'Vacant'}
+                    </div>
+                  </div>`).join('')
+              }
+            </div>
+          </div>`
+      }).join('')
     }
 
     async function saveProperty() {
       const name = document.getElementById('prop-name').value.trim()
       const address = document.getElementById('prop-address').value.trim()
 
-      if (!name) {
-        showAlert('modal-alert', 'Property name is required', 'error')
-        return
-      }
+      if (!name) { showAlert('property-alert', 'Property name is required', 'error'); return }
 
       const { error } = await sbClient.from('properties').insert({
-        landlord_id: currentUser.id,
-        name: name,
-        address: address
+        landlord_id: currentUser.id, name, address
       })
 
-      if (error) {
-        showAlert('modal-alert', error.message, 'error')
-        return
-      }
+      if (error) { showAlert('property-alert', error.message, 'error'); return }
 
-      closeModal()
+      closeModal('property')
       document.getElementById('prop-name').value = ''
       document.getElementById('prop-address').value = ''
+      loadProperties()
+    }
+
+    async function saveUnit() {
+      const number = document.getElementById('unit-number').value.trim()
+      const rent = document.getElementById('unit-rent').value
+
+      if (!number || !rent) { showAlert('unit-alert', 'All fields are required', 'error'); return }
+
+      const { error } = await sbClient.from('units').insert({
+        property_id: selectedPropertyId,
+        unit_number: number,
+        rent_amount: parseFloat(rent),
+        is_occupied: false
+      })
+
+      if (error) { showAlert('unit-alert', error.message, 'error'); return }
+
+      closeModal('unit')
       loadProperties()
     }
 
