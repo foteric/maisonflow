@@ -113,5 +113,14 @@
 
   <footer>© 2025 MaisonFlow. Built for Rwanda.</footer>
 
+  <script>
+  const hash = window.location.hash
+  if (hash.includes('type=recovery')) {
+    location.href = 'pages/reset-password.html' + hash
+  } else if (hash.includes('type=signup') || hash.includes('access_token')) {
+    location.href = 'pages/dashboard.html' + hash
+  }
+</script>
+
 </body>
 </html>
