@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Maintenance</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #10b981; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #2563eb; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .btn-add {
+      background: #2563eb; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 460px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 24px; color: #1e293b; }
+    .modal-footer { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .btn-save {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: none; background: #2563eb; color: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .tickets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .ticket-card {
+      background: #fff; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .ticket-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .ticket-title { font-size: 16px; font-weight: 700; color: #1e293b; }
+    .ticket-desc { color: #64748b; font-size: 14px; margin-bottom: 16px; }
+    .ticket-footer { display: flex; justify-content: space-between; align-items: center; }
+    .ticket-date { font-size: 12px; color: #94a3b8; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .badge-green { background: #d1fae5; color: #059669; }
+    .badge-blue { background: #dbeafe; color: #2563eb; }
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 16px; border-radius: 20px; border: 2px solid #e2e8f0;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: #64748b; transition: 0.2s;
+    }
+    .filter-btn.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span></div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+    <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
+    <div class="nav-item active" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <h1>🔧 Maintenance Tickets</h1>
+      <button class="btn-add" onclick="openModal()">+ New Ticket</button>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTickets('all', this)">All</button>
+      <button class="filter-btn" onclick="filterTickets('open', this)">Open</button>
+      <button class="filter-btn" onclick="filterTickets('in_progress', this)">In Progress</button>
+      <button class="filter-btn" onclick="filterTickets('resolved', this)">Resolved</button>
+    </div>
+
+    <div id="alert"></div>
+    <div class="tickets-grid" id="tickets-list">
+      <div class="empty-state">
+        <div class="icon">🔧</div>
+        <p>Loading tickets...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW TICKET MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>New Maintenance Ticket</h2>
+      <div id="modal-alert"></div>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="ticket-title" placeholder="e.g. Broken pipe in bathroom">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="ticket-desc" placeholder="Describe the issue...">
+      </div>
+      <div class="form-group">
+        <label>Property</label>
+        <select id="ticket-property" onchange="filterUnitsByProperty()">
+          <option value="">Select property</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select id="ticket-unit">
+          <option value="">Select property first</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="ticket-priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveTicket()">Submit Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let currentUser = null
+    let allTickets = []
+    let allUnits = []
+
+    function openModal() { loadProperties(); document.getElementById('modal').classList.add('show') }
+    function closeModal() { document.getElementById('modal').classList.remove('show') }
+
+    function showAlert(id, message, type) {
+      document.getElementById(id).innerHTML =
+        `<div class="alert alert-${type}">${message}</div>`
+    }
+
+    function priorityBadge(priority) {
+      const map = { high: 'badge-red', medium: 'badge-orange', low: 'badge-green' }
+      return `<span class="badge ${map[priority] || 'badge-blue'}">${priority}</span>`
+    }
+
+    function statusBadge(status) {
+      const map = { open: 'badge-red', in_progress: 'badge-orange', resolved: 'badge-green' }
+      const labels = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' }
+      return `<span class="badge ${map[status] || 'badge-blue'}">${labels[status] || status}</span>`
+    }
+
+    async function loadProperties() {
+      const { data: properties } = await sbClient
+        .from('properties')
+        .select('id, name')
+        .eq('landlord_id', currentUser.id)
+
+      const select = document.getElementById('ticket-property')
+      select.innerHTML = '<option value="">Select property</option>'
+      properties?.forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.name}</option>`
+      })
+
+      const { data: units } = await sbClient
+        .from('units')
+        .select('id, unit_number, property_id')
+      allUnits = units || []
+    }
+
+    function filterUnitsByProperty() {
+      const propertyId = document.getElementById('ticket-property').value
+      const unitSelect = document.getElementById('ticket-unit')
+
+      if (!propertyId) {
+        unitSelect.innerHTML = '<option value="">Select property first</option>'
+        return
+      }
+
+      const filtered = allUnits.filter(u => u.property_id === propertyId)
+      unitSelect.innerHTML = '<option value="">Select unit</option>'
+      filtered.forEach(u => {
+        unitSelect.innerHTML += `<option value="${u.id}">Unit ${u.unit_number}</option>`
+      })
+    }
+
+    async function loadTickets() {
+      const { data: tickets } = await sbClient
+        .from('maintenance_tickets')
+        .select('*, units(unit_number, properties(name))')
+        .order('created_at', { ascending: false })
+
+      allTickets = tickets || []
+      renderTickets(allTickets)
+    }
+
+    function renderTickets(tickets) {
+      const container = document.getElementById('tickets-list')
+
+      if (!tickets || tickets.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🔧</div>
+            <p>No tickets found. Click <strong>New Ticket</strong> to get started.</p>
+          </div>`
+        return
+      }
+
+      container.innerHTML = tickets.map(t => `
+        <div class="ticket-card">
+          <div class="ticket-header">
+            <div class="ticket-title">${t.title}</div>
+            ${priorityBadge(t.priority)}
+          </div>
+          <div class="ticket-desc">${t.description || 'No description'}</div>
+          <div class="ticket-footer">
+            <div>
+              <div style="font-size:13px;color:#64748b;">
+                📍 ${t.units?.properties?.name || '—'} — Unit ${t.units?.unit_number || '—'}
+              </div>
+              <div class="ticket-date">${new Date(t.created_at).toLocaleDateString()}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+              ${statusBadge(t.status)}
+              <select onchange="updateStatus('${t.id}', this.value)"
+                style="font-size:12px;padding:4px;border-radius:6px;border:1px solid #e2e8f0;">
+                <option value="open" ${t.status==='open'?'selected':''}>Open</option>
+                <option value="in_progress" ${t.status==='in_progress'?'selected':''}>In Progress</option>
+                <option value="resolved" ${t.status==='resolved'?'selected':''}>Resolved</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    function filterTickets(status, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      if (status === 'all') renderTickets(allTickets)
+      else renderTickets(allTickets.filter(t => t.status === status))
+    }
+
+    async function updateStatus(id, status) {
+      await sbClient.from('maintenance_tickets').update({ status }).eq('id', id)
+      loadTickets()
+    }
+
+    async function saveTicket() {
+      const title = document.getElementById('ticket-title').value.trim()
+      const desc = document.getElementById('ticket-desc').value.trim()
+      const unitId = document.getElementById('ticket-unit').value
+      const priority = document.getElementById('ticket-priority').value
+
+      if (!title || !unitId) {
+        showAlert('modal-alert', 'Title and unit are required', 'error')
+        return
+      }
+
+      const { error } = await sbClient.from('maintenance_tickets').insert({
+        title, description: desc, unit_id: unitId, priority, status: 'open'
+      })
+
+      if (error) { showAlert('modal-alert', error.message, 'error'); return }
+
+      closeModal()
+      loadTickets()
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+      currentUser = user
+      loadTickets()
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
