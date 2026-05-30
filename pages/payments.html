@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Payments</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #10b981; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #2563eb; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .btn-add {
+      background: #2563eb; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 460px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 24px; color: #1e293b; }
+    .modal-footer { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .btn-save {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: none; background: #2563eb; color: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .payments-table {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f8fafc; padding: 14px 16px;
+      text-align: left; font-size: 13px;
+      color: #64748b; font-weight: 600;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 14px 16px; font-size: 14px;
+      color: #1e293b; border-bottom: 1px solid #f1f5f9;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: #d1fae5; color: #059669; }
+    .badge-blue { background: #dbeafe; color: #2563eb; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .badge-purple { background: #ede9fe; color: #7c3aed; }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .summary-card {
+      background: #fff; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .summary-value { font-size: 22px; font-weight: 800; color: #1e293b; }
+    .summary-label { color: #64748b; font-size: 13px; margin-top: 4px; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span></div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+    <div class="nav-item active" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
+    <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <h1>💰 Payments</h1>
+      <button class="btn-add" onclick="openModal()">+ Log Payment</button>
+    </div>
+
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-value" id="total-collected">0 RWF</div>
+        <div class="summary-label">Total Collected</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" id="total-payments">0</div>
+        <div class="summary-label">Total Payments</div>
+      </div>
+    </div>
+
+    <div id="alert"></div>
+    <div class="payments-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Amount (RWF)</th>
+            <th>Method</th>
+            <th>Reference</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="payments-list">
+          <tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LOG PAYMENT MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Log Payment</h2>
+      <div id="modal-alert"></div>
+      <div class="form-group">
+        <label>Tenant</label>
+        <select id="pay-tenant">
+          <option value="">Select tenant</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Amount (RWF)</label>
+        <input type="number" id="pay-amount" placeholder="e.g. 150000">
+      </div>
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="pay-method">
+          <option value="mtn_momo">MTN MoMo</option>
+          <option value="airtel_money">Airtel Money</option>
+          <option value="bank_transfer">Bank Transfer</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Reference / Transaction ID</label>
+        <input type="text" id="pay-reference" placeholder="e.g. TXN123456">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="savePayment()">Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let currentUser = null
+
+    function openModal() { loadTenants(); document.getElementById('modal').classList.add('show') }
+    function closeModal() { document.getElementById('modal').classList.remove('show') }
+
+    function showAlert(id, message, type) {
+      document.getElementById(id).innerHTML =
+        `<div class="alert alert-${type}">${message}</div>`
+    }
+
+    function methodBadge(method) {
+      const map = {
+        mtn_momo: ['MTN MoMo', 'badge-yellow'],
+        airtel_money: ['Airtel Money', 'badge-red'],
+        bank_transfer: ['Bank Transfer', 'badge-blue'],
+        cash: ['Cash', 'badge-green']
+      }
+      const [label, cls] = map[method] || [method, 'badge-blue']
+      return `<span class="badge ${cls}">${label}</span>`
+    }
+
+    async function loadTenants() {
+      const { data: tenants } = await sbClient
+        .from('tenants')
+        .select('id, profiles(full_name)')
+
+      const select = document.getElementById('pay-tenant')
+      select.innerHTML = '<option value="">Select tenant</option>'
+      tenants?.forEach(t => {
+        select.innerHTML += `<option value="${t.id}">${t.profiles?.full_name}</option>`
+      })
+    }
+
+    async function loadPayments() {
+      const { data: payments } = await sbClient
+        .from('payments')
+        .select('*, tenants(profile_id, profiles(full_name))')
+        .order('paid_at', { ascending: false })
+
+      const tbody = document.getElementById('payments-list')
+
+      if (!payments || payments.length === 0) {
+        tbody.innerHTML =
+          `<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">
+            No payments yet. Click <strong>Log Payment</strong> to get started.
+          </td></tr>`
+        document.getElementById('total-collected').textContent = '0 RWF'
+        document.getElementById('total-payments').textContent = '0'
+        return
+      }
+
+      const total = payments.reduce((sum, p) => sum + p.amount, 0)
+      document.getElementById('total-collected').textContent =
+        total.toLocaleString() + ' RWF'
+      document.getElementById('total-payments').textContent = payments.length
+
+      tbody.innerHTML = payments.map(p => `
+        <tr>
+          <td>${p.tenants?.profiles?.full_name || '—'}</td>
+          <td>${p.amount.toLocaleString()}</td>
+          <td>${methodBadge(p.method)}</td>
+          <td>${p.reference || '—'}</td>
+          <td>${new Date(p.paid_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('')
+    }
+
+    async function savePayment() {
+      const tenantId = document.getElementById('pay-tenant').value
+      const amount = document.getElementById('pay-amount').value
+      const method = document.getElementById('pay-method').value
+      const reference = document.getElementById('pay-reference').value.trim()
+
+      if (!tenantId || !amount) {
+        showAlert('modal-alert', 'Please select a tenant and enter amount', 'error')
+        return
+      }
+
+      const { error } = await sbClient.from('payments').insert({
+        tenant_id: tenantId,
+        amount: parseFloat(amount),
+        method: method,
+        reference: reference || null
+      })
+
+      if (error) { showAlert('modal-alert', error.message, 'error'); return }
+
+      closeModal()
+      loadPayments()
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+      currentUser = user
+      loadPayments()
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
