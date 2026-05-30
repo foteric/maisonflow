@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Tenant Portal</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #10b981; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #10b981; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .page-header p { color: #64748b; font-size: 14px; }
+    .tenant-badge {
+      display: inline-block;
+      background: #10b981; color: #fff;
+      padding: 4px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px; margin-bottom: 32px;
+    }
+    .metric-card {
+      background: #fff; border-radius: 12px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .metric-icon { font-size: 32px; margin-bottom: 12px; }
+    .metric-value { font-size: 22px; font-weight: 800; color: #1e293b; }
+    .metric-label { color: #64748b; font-size: 14px; margin-top: 4px; }
+    .metric-card.green { border-left: 4px solid #10b981; }
+    .metric-card.red { border-left: 4px solid #ef4444; }
+    .metric-card.blue { border-left: 4px solid #2563eb; }
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #1e293b; }
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+    .rent-item {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 12px;
+      background: #f8fafc; border-radius: 8px; margin-bottom: 8px;
+    }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-green { background: #d1fae5; color: #059669; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 460px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 24px; color: #1e293b; }
+    .modal-footer { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .btn-save {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: none; background: #10b981; color: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .btn-report {
+      background: #10b981; color: #fff; border: none;
+      padding: 10px 20px; border-radius: 10px;
+      cursor: pointer; font-size: 14px; font-weight: 600;
+    }
+    .ticket-item {
+      padding: 16px; background: #f8fafc;
+      border-radius: 10px; margin-bottom: 12px;
+    }
+    .ticket-title { font-weight: 700; margin-bottom: 4px; }
+    .ticket-meta { font-size: 13px; color: #64748b; }
+    .empty-state { text-align: center; padding: 40px; color: #64748b; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; padding-top: 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span></div>
+    <div class="nav-item active"><span class="nav-icon">🏠</span> My Home</div>
+    <div class="nav-item" onclick="showSection('rent')"><span class="nav-icon">💰</span> Rent History</div>
+    <div class="nav-item" onclick="showSection('tickets')"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item" onclick="location.href='profile.html'"><span class="nav-icon">👤</span> Profile</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <div class="tenant-badge">🏠 TENANT PORTAL</div>
+      <h1 id="welcome-msg">Welcome back 👋</h1>
+      <p id="tenant-email">Loading...</p>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric-card green">
+        <div class="metric-icon">🏠</div>
+        <div class="metric-value" id="my-unit">—</div>
+        <div class="metric-label">My Unit</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-icon">💰</div>
+        <div class="metric-value" id="rent-due">0 RWF</div>
+        <div class="metric-label">Rent Due</div>
+      </div>
+      <div class="metric-card blue">
+        <div class="metric-icon">🔧</div>
+        <div class="metric-value" id="open-tickets">0</div>
+        <div class="metric-label">Open Tickets</div>
+      </div>
+    </div>
+
+    <!-- HOME SECTION -->
+    <div id="section-home">
+      <p class="section-title">📋 Current Rent Status</p>
+      <div class="card" id="rent-status-card">
+        <p style="color:#64748b;">Loading rent info...</p>
+      </div>
+
+      <p class="section-title">🔧 Recent Maintenance</p>
+      <div class="card" id="recent-tickets">
+        <p style="color:#64748b;">Loading...</p>
+      </div>
+    </div>
+
+    <!-- RENT HISTORY SECTION -->
+    <div id="section-rent" style="display:none;">
+      <p class="section-title">💰 Rent History</p>
+      <div class="card" id="rent-history">
+        <p style="color:#64748b;">Loading...</p>
+      </div>
+    </div>
+
+    <!-- TICKETS SECTION -->
+    <div id="section-tickets" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <p class="section-title" style="margin:0;">🔧 My Maintenance Tickets</p>
+        <button class="btn-report" onclick="openModal()">+ Report Issue</button>
+      </div>
+      <div id="tickets-list">
+        <p style="color:#64748b;">Loading...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- REPORT ISSUE MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Report a Maintenance Issue</h2>
+      <div id="modal-alert"></div>
+      <div class="form-group">
+        <label>Issue Title</label>
+        <input type="text" id="issue-title" placeholder="e.g. Leaking pipe in bathroom">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="issue-desc" placeholder="Describe the problem...">
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="issue-priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="submitIssue()">Submit Issue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let currentUser = null
+    let tenantData = null
+
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('open')
+      document.getElementById('overlay').classList.toggle('show')
+    }
+
+    function openModal() { document.getElementById('modal').classList.add('show') }
+    function closeModal() { document.getElementById('modal').classList.remove('show') }
+
+    function showAlert(id, message, type) {
+      document.getElementById(id).innerHTML =
+        `<div class="alert alert-${type}">${message}</div>`
+    }
+
+    function showSection(name) {
+      ['home','rent','tickets'].forEach(s => {
+        document.getElementById(`section-${s}`).style.display = s === name ? 'block' : 'none'
+      })
+      if (name === 'rent') loadRentHistory()
+      if (name === 'tickets') loadMyTickets()
+    }
+
+    function statusBadge(status) {
+      const map = { unpaid: 'badge-red', paid: 'badge-green', partial: 'badge-orange' }
+      return `<span class="badge ${map[status] || 'badge-red'}">${status}</span>`
+    }
+
+    function ticketStatusBadge(status) {
+      const map = { open: 'badge-red', in_progress: 'badge-orange', resolved: 'badge-green' }
+      const labels = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' }
+      return `<span class="badge ${map[status]}">${labels[status] || status}</span>`
+    }
+
+    async function loadRentHistory() {
+      const { data: records } = await sbClient
+        .from('rent_records')
+        .select('*')
+        .eq('tenant_id', tenantData.id)
+        .order('month', { ascending: false })
+
+      const container = document.getElementById('rent-history')
+      if (!records || records.length === 0) {
+        container.innerHTML = `<div class="empty-state">No rent records yet.</div>`
+        return
+      }
+      container.innerHTML = records.map(r => `
+        <div class="rent-item">
+          <div>
+            <div style="font-weight:600;">${r.month}</div>
+            <div style="font-size:13px;color:#64748b;">Due: ${r.due_date || '—'}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;">${r.amount_due.toLocaleString()} RWF</div>
+            ${statusBadge(r.status)}
+          </div>
+        </div>
+      `).join('')
+    }
+
+    async function loadMyTickets() {
+      const { data: tickets } = await sbClient
+        .from('maintenance_tickets')
+        .select('*, units(unit_number)')
+        .eq('tenant_id', tenantData.id)
+        .order('created_at', { ascending: false })
+
+      const container = document.getElementById('tickets-list')
+      if (!tickets || tickets.length === 0) {
+        container.innerHTML = `<div class="empty-state">No tickets yet. Click Report Issue to get started.</div>`
+        return
+      }
+      container.innerHTML = tickets.map(t => `
+        <div class="ticket-item">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <div class="ticket-title">${t.title}</div>
+            ${ticketStatusBadge(t.status)}
+          </div>
+          <div class="ticket-meta">${t.description || '—'} • ${new Date(t.created_at).toLocaleDateString()}</div>
+        </div>
+      `).join('')
+    }
+
+    async function submitIssue() {
+      const title = document.getElementById('issue-title').value.trim()
+      const desc = document.getElementById('issue-desc').value.trim()
+      const priority = document.getElementById('issue-priority').value
+
+      if (!title) { showAlert('modal-alert', 'Title is required', 'error'); return }
+
+      const { error } = await sbClient.from('maintenance_tickets').insert({
+        title, description: desc, priority,
+        unit_id: tenantData.unit_id,
+        tenant_id: tenantData.id,
+        status: 'open'
+      })
+
+      if (error) { showAlert('modal-alert', error.message, 'error'); return }
+
+      closeModal()
+      loadMyTickets()
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+      currentUser = user
+
+      const { data: profile } = await sbClient
+        .from('profiles').select('role, full_name')
+        .eq('id', user.id).single()
+
+      if (profile?.role !== 'tenant') { location.href = 'dashboard.html'; return }
+
+      document.getElementById('tenant-email').textContent = user.email
+      document.getElementById('welcome-msg').textContent = `Welcome back, ${profile.full_name} 👋`
+
+      const { data: tenant } = await sbClient
+        .from('tenants').select('*, units(unit_number, rent_amount, properties(name))')
+        .eq('profile_id', user.id).single()
+
+      tenantData = tenant
+
+      if (tenant) {
+        document.getElementById('my-unit').textContent =
+          `Unit ${tenant.units?.unit_number || '—'}`
+
+        const { data: rentRecord } = await sbClient
+          .from('rent_records').select('*')
+          .eq('tenant_id', tenant.id)
+          .order('month', { ascending: false })
+          .limit(1).single()
+
+        if (rentRecord) {
+          const balance = rentRecord.amount_due - rentRecord.amount_paid
+          document.getElementById('rent-due').textContent = balance.toLocaleString() + ' RWF'
+          document.getElementById('rent-status-card').innerHTML = `
+            <div class="rent-item">
+              <div>
+                <div style="font-weight:700;font-size:16px;">${rentRecord.month}</div>
+                <div style="color:#64748b;font-size:13px;">Due: ${rentRecord.due_date || '—'}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-weight:800;font-size:18px;">${rentRecord.amount_due.toLocaleString()} RWF</div>
+                ${statusBadge(rentRecord.status)}
+              </div>
+            </div>`
+        }
+
+        const { data: tickets } = await sbClient
+          .from('maintenance_tickets').select('id')
+          .eq('tenant_id', tenant.id).eq('status', 'open')
+        document.getElementById('open-tickets').textContent = tickets?.length || 0
+
+        const { data: recentTickets } = await sbClient
+          .from('maintenance_tickets').select('*')
+          .eq('tenant_id', tenant.id)
+          .order('created_at', { ascending: false }).limit(3)
+
+        document.getElementById('recent-tickets').innerHTML = recentTickets?.length > 0
+          ? recentTickets.map(t => `
+            <div class="ticket-item">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <div class="ticket-title">${t.title}</div>
+                ${ticketStatusBadge(t.status)}
+              </div>
+              <div class="ticket-meta">${new Date(t.created_at).toLocaleDateString()}</div>
+            </div>`).join('')
+          : `<div class="empty-state">No maintenance tickets yet.</div>`
+      }
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
