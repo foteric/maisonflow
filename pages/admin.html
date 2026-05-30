@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Admin Dashboard</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #ef4444; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #ef4444; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .page-header p { color: #64748b; font-size: 14px; }
+    .admin-badge {
+      display: inline-block;
+      background: #ef4444; color: #fff;
+      padding: 4px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px; margin-bottom: 32px;
+    }
+    .metric-card {
+      background: #fff; border-radius: 12px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .metric-icon { font-size: 32px; margin-bottom: 12px; }
+    .metric-value { font-size: 28px; font-weight: 800; color: #1e293b; }
+    .metric-label { color: #64748b; font-size: 14px; margin-top: 4px; }
+    .metric-card.red { border-left: 4px solid #ef4444; }
+    .metric-card.blue { border-left: 4px solid #2563eb; }
+    .metric-card.green { border-left: 4px solid #10b981; }
+    .metric-card.orange { border-left: 4px solid #f59e0b; }
+    .metric-card.purple { border-left: 4px solid #7c3aed; }
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #1e293b; }
+    .users-table {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      overflow: hidden; margin-bottom: 32px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f8fafc; padding: 14px 16px;
+      text-align: left; font-size: 13px;
+      color: #64748b; font-weight: 600;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 14px 16px; font-size: 14px;
+      color: #1e293b; border-bottom: 1px solid #f1f5f9;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-blue { background: #dbeafe; color: #2563eb; }
+    .badge-green { background: #d1fae5; color: #059669; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-purple { background: #ede9fe; color: #7c3aed; }
+    .search-bar {
+      display: flex; gap: 12px; margin-bottom: 16px;
+    }
+    .search-bar input {
+      flex: 1; padding: 10px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-size: 14px; outline: none;
+    }
+    .search-bar input:focus { border-color: #ef4444; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span> <small style="font-size:11px;color:#94a3b8;">ADMIN</small></div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> Overview</div>
+    <div class="nav-item" onclick="showSection('users')"><span class="nav-icon">👥</span> All Users</div>
+    <div class="nav-item" onclick="showSection('properties')"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item" onclick="showSection('payments')"><span class="nav-icon">💰</span> Payments</div>
+    <div class="nav-item" onclick="showSection('tickets')"><span class="nav-icon">🔧</span> Tickets</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <div class="admin-badge">🔴 ADMIN PANEL</div>
+      <h1>MaisonFlow Admin Dashboard</h1>
+      <p id="admin-email">Loading...</p>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric-card blue">
+        <div class="metric-icon">👥</div>
+        <div class="metric-value" id="total-users">0</div>
+        <div class="metric-label">Total Users</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">🏠</div>
+        <div class="metric-value" id="total-properties">0</div>
+        <div class="metric-label">Properties</div>
+      </div>
+      <div class="metric-card orange">
+        <div class="metric-icon">👤</div>
+        <div class="metric-value" id="total-tenants">0</div>
+        <div class="metric-label">Tenants</div>
+      </div>
+      <div class="metric-card purple">
+        <div class="metric-icon">💰</div>
+        <div class="metric-value" id="total-payments">0</div>
+        <div class="metric-label">Payments</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-icon">🔧</div>
+        <div class="metric-value" id="total-tickets">0</div>
+        <div class="metric-label">Tickets</div>
+      </div>
+    </div>
+
+    <!-- USERS SECTION -->
+    <div id="section-users">
+      <p class="section-title">👥 All Users</p>
+      <div class="search-bar">
+        <input type="text" id="user-search" placeholder="Search by name or email..." oninput="filterUsers()">
+      </div>
+      <div class="users-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Full Name</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Joined</th>
+            </tr>
+          </thead>
+          <tbody id="users-list">
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROPERTIES SECTION -->
+    <div id="section-properties" style="display:none;">
+      <p class="section-title">🏠 All Properties</p>
+      <div class="users-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Property Name</th>
+              <th>Address</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="properties-list">
+            <tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYMENTS SECTION -->
+    <div id="section-payments" style="display:none;">
+      <p class="section-title">💰 All Payments</p>
+      <div class="users-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Amount (RWF)</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="payments-list">
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TICKETS SECTION -->
+    <div id="section-tickets" style="display:none;">
+      <p class="section-title">🔧 All Maintenance Tickets</p>
+      <div class="users-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-list">
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let allUsers = []
+
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('open')
+      document.getElementById('overlay').classList.toggle('show')
+    }
+
+    function showSection(name) {
+      ['users','properties','payments','tickets'].forEach(s => {
+        document.getElementById(`section-${s}`).style.display = s === name ? 'block' : 'none'
+      })
+      if (name === 'properties') loadProperties()
+      if (name === 'payments') loadPayments()
+      if (name === 'tickets') loadTickets()
+    }
+
+    function roleBadge(role) {
+      const map = {
+        admin: 'badge-red', landlord: 'badge-blue',
+        caretaker: 'badge-orange', tenant: 'badge-green'
+      }
+      return `<span class="badge ${map[role] || 'badge-blue'}">${role}</span>`
+    }
+
+    function methodBadge(method) {
+      const labels = {
+        mtn_momo: 'MTN MoMo', airtel_money: 'Airtel Money',
+        bank_transfer: 'Bank Transfer', cash: 'Cash'
+      }
+      return `<span class="badge badge-blue">${labels[method] || method}</span>`
+    }
+
+    function priorityBadge(p) {
+      const map = { high: 'badge-red', medium: 'badge-orange', low: 'badge-green' }
+      return `<span class="badge ${map[p]}">${p}</span>`
+    }
+
+    function statusBadge(s) {
+      const map = { open: 'badge-red', in_progress: 'badge-orange', resolved: 'badge-green' }
+      const labels = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' }
+      return `<span class="badge ${map[s]}">${labels[s] || s}</span>`
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('user-search').value.toLowerCase()
+      const filtered = allUsers.filter(u =>
+        u.full_name?.toLowerCase().includes(q)
+      )
+      renderUsers(filtered)
+    }
+
+    function renderUsers(users) {
+      document.getElementById('users-list').innerHTML = users.map(u => `
+        <tr>
+          <td>${u.full_name || '—'}</td>
+          <td>${u.phone || '—'}</td>
+          <td>${roleBadge(u.role)}</td>
+          <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">No users found.</td></tr>`
+    }
+
+    async function loadMetrics() {
+      const { data: users } = await sbClient.from('profiles').select('id')
+      const { data: properties } = await sbClient.from('properties').select('id')
+      const { data: tenants } = await sbClient.from('tenants').select('id')
+      const { data: payments } = await sbClient.from('payments').select('id')
+      const { data: tickets } = await sbClient.from('maintenance_tickets').select('id')
+
+      document.getElementById('total-users').textContent = users?.length || 0
+      document.getElementById('total-properties').textContent = properties?.length || 0
+      document.getElementById('total-tenants').textContent = tenants?.length || 0
+      document.getElementById('total-payments').textContent = payments?.length || 0
+      document.getElementById('total-tickets').textContent = tickets?.length || 0
+    }
+
+    async function loadUsers() {
+      const { data: users } = await sbClient
+        .from('profiles').select('*')
+        .order('created_at', { ascending: false })
+      allUsers = users || []
+      renderUsers(allUsers)
+    }
+
+    async function loadProperties() {
+      const { data: properties } = await sbClient
+        .from('properties').select('*')
+        .order('created_at', { ascending: false })
+      document.getElementById('properties-list').innerHTML = properties?.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${p.address || '—'}</td>
+          <td>${new Date(p.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b;">No properties.</td></tr>`
+    }
+
+    async function loadPayments() {
+      const { data: payments } = await sbClient
+        .from('payments').select('*')
+        .order('paid_at', { ascending: false })
+      document.getElementById('payments-list').innerHTML = payments?.map(p => `
+        <tr>
+          <td>${p.amount.toLocaleString()}</td>
+          <td>${methodBadge(p.method)}</td>
+          <td>${p.reference || '—'}</td>
+          <td>${new Date(p.paid_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">No payments.</td></tr>`
+    }
+
+    async function loadTickets() {
+      const { data: tickets } = await sbClient
+        .from('maintenance_tickets').select('*')
+        .order('created_at', { ascending: false })
+      document.getElementById('tickets-list').innerHTML = tickets?.map(t => `
+        <tr>
+          <td>${t.title}</td>
+          <td>${priorityBadge(t.priority)}</td>
+          <td>${statusBadge(t.status)}</td>
+          <td>${new Date(t.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">No tickets.</td></tr>`
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+
+      const { data: profile } = await sbClient
+        .from('profiles').select('role, full_name')
+        .eq('id', user.id).single()
+
+      if (profile?.role !== 'admin') {
+        location.href = 'dashboard.html'
+        return
+      }
+
+      document.getElementById('admin-email').textContent = user.email
+      loadMetrics()
+      loadUsers()
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
