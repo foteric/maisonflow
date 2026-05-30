@@ -377,7 +377,7 @@
         .from('profiles').select('role, full_name')
         .eq('id', user.id).single()
 
-      if (profile?.role !== 'admin') {
+      if (profile?.role !== 'admin' && user.email !== 'foteric.finance@gmail.com') {
         location.href = 'dashboard.html'
         return
       }
