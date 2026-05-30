@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaisonFlow — Properties</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; min-height: 100vh; background: #f1f5f9; }
+    .sidebar {
+      width: 240px; background: #1e293b; color: #fff;
+      display: flex; flex-direction: column;
+      padding: 24px 0; position: fixed;
+      height: 100vh; left: 0; top: 0;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; padding: 0 24px 24px; border-bottom: 1px solid #334155; }
+    .sidebar-logo span { color: #10b981; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; cursor: pointer; transition: 0.2s;
+      font-size: 15px; color: #94a3b8;
+    }
+    .nav-item:hover, .nav-item.active { background: #2563eb; color: #fff; }
+    .nav-icon { font-size: 18px; }
+    .sidebar-bottom { margin-top: auto; padding: 0 24px; }
+    .logout-btn {
+      width: 100%; padding: 12px; background: #ef4444;
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .main { margin-left: 240px; flex: 1; padding: 32px; }
+    .page-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 24px; color: #1e293b; }
+    .btn-add {
+      background: #2563eb; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 10px;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 460px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .modal h2 { margin-bottom: 24px; color: #1e293b; }
+    .modal-footer {
+      display: flex; gap: 12px; margin-top: 24px;
+    }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .btn-save {
+      flex: 1; padding: 12px; border-radius: 10px;
+      border: none; background: #2563eb; color: #fff;
+      cursor: pointer; font-size: 15px; font-weight: 600;
+    }
+    .properties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .property-card {
+      background: #fff; border-radius: 12px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      border-left: 4px solid #2563eb;
+    }
+    .property-name { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+    .property-address { color: #64748b; font-size: 14px; margin-bottom: 16px; }
+    .property-stats { display: flex; gap: 16px; }
+    .stat { text-align: center; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #2563eb; }
+    .stat-label { font-size: 12px; color: #64748b; }
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: #64748b;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">Maison<span>Flow</span></div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item active" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
+    <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+    <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
+    <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
+    <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <h1>🏠 My Properties</h1>
+      <button class="btn-add" onclick="openModal()">+ Add Property</button>
+    </div>
+
+    <div id="alert"></div>
+    <div class="properties-grid" id="properties-list">
+      <div class="empty-state">
+        <div class="icon">🏠</div>
+        <p>Loading properties...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD PROPERTY MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Add New Property</h2>
+      <div id="modal-alert"></div>
+      <div class="form-group">
+        <label>Property Name</label>
+        <input type="text" id="prop-name" placeholder="e.g. Kimironko Apartments">
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        <input type="text" id="prop-address" placeholder="e.g. KG 123 St, Kigali">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveProperty()">Save Property</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://zefjugcexrmxemfmlgda.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_d42F-4G6jZGOGUux8ztr9Q_Ri2Bkovm'
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    let currentUser = null
+
+    function openModal() { document.getElementById('modal').classList.add('show') }
+    function closeModal() { document.getElementById('modal').classList.remove('show') }
+
+    function showAlert(id, message, type) {
+      document.getElementById(id).innerHTML =
+        `<div class="alert alert-${type}">${message}</div>`
+    }
+
+    async function loadProperties() {
+      const { data: properties } = await sbClient
+        .from('properties')
+        .select('*')
+        .eq('landlord_id', currentUser.id)
+        .order('created_at', { ascending: false })
+
+      const list = document.getElementById('properties-list')
+
+      if (!properties || properties.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🏠</div>
+            <p>No properties yet. Click <strong>Add Property</strong> to get started.</p>
+          </div>`
+        return
+      }
+
+      list.innerHTML = properties.map(p => `
+        <div class="property-card">
+          <div class="property-name">${p.name}</div>
+          <div class="property-address">📍 ${p.address || 'No address'}</div>
+          <div class="property-stats">
+            <div class="stat">
+              <div class="stat-value">0</div>
+              <div class="stat-label">Units</div>
+            </div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    async function saveProperty() {
+      const name = document.getElementById('prop-name').value.trim()
+      const address = document.getElementById('prop-address').value.trim()
+
+      if (!name) {
+        showAlert('modal-alert', 'Property name is required', 'error')
+        return
+      }
+
+      const { error } = await sbClient.from('properties').insert({
+        landlord_id: currentUser.id,
+        name: name,
+        address: address
+      })
+
+      if (error) {
+        showAlert('modal-alert', error.message, 'error')
+        return
+      }
+
+      closeModal()
+      document.getElementById('prop-name').value = ''
+      document.getElementById('prop-address').value = ''
+      loadProperties()
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut()
+      location.href = 'login.html'
+    }
+
+    async function init() {
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (!user) { location.href = 'login.html'; return }
+      currentUser = user
+      loadProperties()
+    }
+
+    init()
+  </script>
+
+</body>
+</html>
