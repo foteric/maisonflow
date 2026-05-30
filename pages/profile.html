@@ -57,9 +57,7 @@
       text-align: center; font-size: 20px;
       font-weight: 700; color: #1e293b; margin-bottom: 4px;
     }
-    .profile-role {
-      text-align: center; margin-bottom: 24px;
-    }
+    .profile-role { text-align: center; margin-bottom: 24px; }
     .badge {
       padding: 4px 12px; border-radius: 20px;
       font-size: 12px; font-weight: 600;
@@ -98,13 +96,7 @@
 
   <div class="sidebar">
     <div class="sidebar-logo">Maison<span>Flow</span></div>
-    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
-    <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
-    <div class="nav-item" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
-    <div class="nav-item" onclick="location.href='rent.html'"><span class="nav-icon">📋</span> Rent Tracking</div>
-    <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
-    <div class="nav-item" onclick="location.href='maintenance.html'"><span class="nav-icon">🔧</span> Maintenance</div>
-    <div class="nav-item" onclick="location.href='notifications.html'"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="nav-item" id="nav-home"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item active"><span class="nav-icon">👤</span> Profile</div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
@@ -119,7 +111,6 @@
 
     <div class="profile-grid">
 
-      <!-- PROFILE CARD -->
       <div class="profile-card">
         <h2>My Profile</h2>
         <div class="avatar" id="avatar-initials">?</div>
@@ -150,7 +141,6 @@
         </div>
       </div>
 
-      <!-- EDIT PROFILE -->
       <div class="profile-card">
         <h2>Edit Profile</h2>
         <div id="edit-alert"></div>
@@ -165,7 +155,6 @@
         <button class="btn-save" onclick="saveProfile()">Save Changes</button>
       </div>
 
-      <!-- CHANGE PASSWORD -->
       <div class="profile-card">
         <h2>Change Password</h2>
         <div id="pass-alert"></div>
@@ -212,6 +201,15 @@
         .eq('id', user.id).single()
 
       if (profile) {
+        const homeLinks = {
+          admin: 'admin.html',
+          landlord: 'dashboard.html',
+          caretaker: 'caretaker.html',
+          tenant: 'tenant-portal.html'
+        }
+        const homeLink = homeLinks[profile.role] || 'dashboard.html'
+        document.getElementById('nav-home').onclick = () => location.href = homeLink
+
         const initials = profile.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'
         document.getElementById('avatar-initials').textContent = initials
         document.getElementById('profile-name').textContent = profile.full_name || '—'
@@ -227,15 +225,11 @@
     async function saveProfile() {
       const name = document.getElementById('edit-name').value.trim()
       const phone = document.getElementById('edit-phone').value.trim()
-
       if (!name) { showAlert('edit-alert', 'Name is required', 'error'); return }
-
       const { error } = await sbClient.from('profiles')
         .update({ full_name: name, phone: phone })
         .eq('id', currentUser.id)
-
       if (error) { showAlert('edit-alert', error.message, 'error'); return }
-
       showAlert('edit-alert', 'Profile updated successfully!', 'success')
       loadProfile()
     }
@@ -243,14 +237,11 @@
     async function changePassword() {
       const password = document.getElementById('new-password').value
       const confirm = document.getElementById('confirm-password').value
-
       if (!password || !confirm) { showAlert('pass-alert', 'Please fill in all fields', 'error'); return }
       if (password !== confirm) { showAlert('pass-alert', 'Passwords do not match', 'error'); return }
-      if (password.length < 6) { showAlert('pass-alert', 'Password must be at least 6 characters', 'error'); return }
-
+      if (password.length < 6) { showAlert('pass-alert', 'Min. 6 characters', 'error'); return }
       const { error } = await sbClient.auth.updateUser({ password })
       if (error) { showAlert('pass-alert', error.message, 'error'); return }
-
       showAlert('pass-alert', 'Password updated successfully!', 'success')
     }
 
