@@ -81,10 +81,7 @@
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f8fafc; }
-    .badge {
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .badge-green { background: #d1fae5; color: #059669; }
     .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
@@ -97,11 +94,14 @@
 </head>
 <body>
 
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
   <div class="sidebar">
     <div class="sidebar-logo">Maison<span>Flow</span></div>
     <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📊</span> Dashboard</div>
     <div class="nav-item" onclick="location.href='properties.html'"><span class="nav-icon">🏠</span> Properties</div>
-    <div class="nav-item active" onclick="location.href='tenants.html'"><span class="nav-icon">👥</span> Tenants</div>
+    <div class="nav-item active"><span class="nav-icon">👥</span> Tenants</div>
     <div class="nav-item" onclick="location.href='caretakers.html'"><span class="nav-icon">🔑</span> Caretakers</div>
     <div class="nav-item" onclick="location.href='rent.html'"><span class="nav-icon">📋</span> Rent Tracking</div>
     <div class="nav-item" onclick="location.href='payments.html'"><span class="nav-icon">💰</span> Payments</div>
@@ -156,6 +156,10 @@
         <input type="tel" id="tenant-phone" placeholder="+250 7XX XXX XXX">
       </div>
       <div class="form-group">
+        <label>Initial Password</label>
+        <input type="password" id="tenant-password" placeholder="Min. 6 characters">
+      </div>
+      <div class="form-group">
         <label>Assign Unit</label>
         <select id="tenant-unit">
           <option value="">Select a unit</option>
@@ -180,6 +184,11 @@
 
     let currentUser = null
 
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('open')
+      document.getElementById('overlay').classList.toggle('show')
+    }
+
     function openModal() {
       loadUnits()
       document.getElementById('modal').classList.add('show')
@@ -193,8 +202,7 @@
 
     async function loadUnits() {
       const { data: properties } = await sbClient
-        .from('properties')
-        .select('id')
+        .from('properties').select('id')
         .eq('landlord_id', currentUser.id)
 
       const propertyIds = properties?.map(p => p.id) || []
@@ -220,15 +228,13 @@
 
     async function loadTenants() {
       const { data: properties } = await sbClient
-        .from('properties')
-        .select('id')
+        .from('properties').select('id')
         .eq('landlord_id', currentUser.id)
 
       const propertyIds = properties?.map(p => p.id) || []
 
       const { data: units } = await sbClient
-        .from('units')
-        .select('id')
+        .from('units').select('id')
         .in('property_id', propertyIds)
 
       const unitIds = units?.map(u => u.id) || []
@@ -256,14 +262,14 @@
           <td>${t.units?.properties?.name || '—'} — Unit ${t.units?.unit_number || '—'}</td>
           <td>${t.move_in_date || '—'}</td>
           <td><span class="badge badge-green">Active</span></td>
-        </tr>
-      `).join('')
+        </tr>`).join('')
     }
 
     async function saveTenant() {
       const name = document.getElementById('tenant-name').value.trim()
       const email = document.getElementById('tenant-email').value.trim()
       const phone = document.getElementById('tenant-phone').value.trim()
+      const password = document.getElementById('tenant-password').value
       const unitId = document.getElementById('tenant-unit').value
       const movein = document.getElementById('tenant-movein').value
 
@@ -272,9 +278,13 @@
         return
       }
 
+      if (!password || password.length < 6) {
+        showAlert('modal-alert', 'Password must be at least 6 characters', 'error')
+        return
+      }
+
       const { data: authData, error: authError } = await sbClient.auth.signUp({
-        email: email,
-        password: 'Tenant@123'
+        email, password
       })
 
       if (authError && !authError.message.includes('already registered')) {
@@ -286,10 +296,7 @@
 
       if (userId) {
         await sbClient.from('profiles').insert({
-          id: userId,
-          full_name: name,
-          phone: phone,
-          role: 'tenant'
+          id: userId, full_name: name, phone, role: 'tenant'
         })
 
         await sbClient.from('tenants').insert({
@@ -306,6 +313,7 @@
       }
 
       closeModal()
+      showAlert('alert', 'Tenant added successfully!', 'success')
       loadTenants()
     }
 
